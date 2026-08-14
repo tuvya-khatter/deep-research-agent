@@ -83,6 +83,7 @@ class OutputMetadata:
     query_id: str
     generated_at: datetime
     source_count: int
+    token_usage: TokenUsage | None = None
 
 
 @dataclass

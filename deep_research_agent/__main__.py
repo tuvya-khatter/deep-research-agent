@@ -25,7 +25,9 @@ from deep_research_agent.tools.tavily_tools import (
     TavilyCrawlTool,
 )
 
-_DEFAULT_MODEL = "us.anthropic.claude-sonnet-4-6"
+# Cross-region inference-profile ID (the "us." prefix is required for on-demand
+# invocation of current Claude models; the bare "anthropic.*" ID throws ValidationException).
+_DEFAULT_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 _DEFAULT_OUTPUT_DIR = Path("./research-output")
 _DEFAULT_LOG_DIR = Path("./logs")
 

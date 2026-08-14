@@ -88,6 +88,7 @@ class OutputManager:
         generated_at = metadata.generated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         sources_section = self._format_sources(sources)
+        usage = metadata.token_usage
 
         return (
             f"# Research: {title}\n\n"
@@ -100,7 +101,9 @@ class OutputManager:
             f"| Generated | {generated_at} |\n"
             f"| Session ID | {metadata.session_id} |\n"
             f"| Query ID | {metadata.query_id} |\n"
-            f"| Input Tokens | {metadata.source_count} |\n"
+            f"| Input Tokens | {usage.input_tokens if usage else 0} |\n"
+            f"| Output Tokens | {usage.output_tokens if usage else 0} |\n"
+            f"| Total Tokens | {usage.total_tokens if usage else 0} |\n"
             f"| Sources Found | {metadata.source_count} |\n\n"
             "---\n\n"
             f"{response_text}\n\n"

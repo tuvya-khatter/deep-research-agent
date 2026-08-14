@@ -143,6 +143,7 @@ class ResearchPipeline:
             query_id=session_context.get("query_id", ""),
             generated_at=datetime.now(tz=timezone.utc),
             source_count=len(response.sources),
+            token_usage=response.token_usage,
         )
         return self._output_manager.write(
             response_text=response.response_text,

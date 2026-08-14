@@ -1,0 +1,71 @@
+[
+  {
+    "role": "user",
+    "content": [
+      {
+        "text": "In one sentence: what year was the Eiffel Tower completed?"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_JyRpSI0Bncv1wuA8DaZlvv",
+          "name": "tavily_search",
+          "input": {
+            "query": "Eiffel Tower completed year",
+            "max_results": 5
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 905,
+        "outputTokens": 80,
+        "totalTokens": 985
+      },
+      "metrics": {
+        "latencyMs": 1022,
+        "timeToFirstByteMs": 1026
+      }
+    }
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "toolResult": {
+          "toolUseId": "tooluse_JyRpSI0Bncv1wuA8DaZlvv",
+          "status": "success",
+          "content": [
+            {
+              "text": "{\"results\": [{\"url\": \"https://en.wikipedia.org/wiki/Eiffel_Tower\", \"title\": \"Eiffel Tower\", \"snippet\": \"This article is about the landmark in Paris, France. | Tallest in the world from\", \"score\": 0.8245895}, {\"url\": \"https://www.youtube.com/watch?v=vurh8_SO6_c\", \"title\": \"Gustave Eiffel, The Eiffel Tower\", \"snippet\": \"Gustave Eiffel, The Eiffel Tower\\nSmarthistory\\n371000 subscribers\\n381 likes\\n10684\", \"score\": 0.6991933}, {\"url\": \"https://artsandculture.google.com/partner/tour-eiffel\", \"title\": \"Eiffel Tower, Paris, France \\u2014 Google Arts & Culture\", \"snippet\": \"# Eiffel Tower. ## Paris, France. The Eiffel Tower was built by Gustave Eiffel f\", \"score\": 0.6641271}, {\"url\": \"https://en.wikipedia.org/wiki/Gustave_Eiffel\", \"title\": \"Gustave Eiffel\", \"snippet\": \"# Gustave Eiffel. A graduate of \\u00c9cole Centrale des Arts et M\\u00e9tiers, he made his \", \"score\": 0.60666215}, {\"url\": \"https://theartssociety.org/arts-news-features/things-you-need-know-about-gustav-eiffel-and-his-amazing-tower\", \"title\": \"The things you need to know about Gustav Eiffel and his ...\", \"snippet\": \"## The things you need to know about Gustav Eiffel and his amazing tower. This m\", \"score\": 0.5760895}]}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "The Eiffel Tower was completed in 1889. (Source: Wikipedia)"
+      }
+    ],
+    "metadata": {
+      "usage": {
+        "inputTokens": 2658,
+        "outputTokens": 20,
+        "totalTokens": 2678
+      },
+      "metrics": {
+        "latencyMs": 834,
+        "timeToFirstByteMs": 670
+      }
+    }
+  }
+]

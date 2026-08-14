@@ -20,6 +20,7 @@ from pathlib import Path
 from deep_research_agent.exceptions import ResearchAgentError
 from deep_research_agent.pipeline import ResearchPipeline
 from deep_research_agent.session import SessionManager
+from deep_research_agent.types import ResearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -83,15 +84,7 @@ class CLI:
             session_ctx = self._session_manager.to_context_dict(session, query_record)
 
             try:
-                result = self._pipeline.run(
-                    query=query,
-                    session_context=session_ctx,
-                    output_dir=output_dir,
-                    stream_callback=self._display_stream,
-                    model_id=model_id,
-                )
-                self._flush_line_buffer()
-                self._display_separator()
+                result = self._execute(query, session_ctx, output_dir, model_id)
                 self._display_output_path(result.output_path)
 
             except ResearchAgentError as err:
@@ -100,6 +93,25 @@ class CLI:
                 choice = self._prompt_retry_or_skip()
                 if choice == "retry":
                     pending_retry = query
+
+    def _execute(
+        self,
+        query: str,
+        session_ctx: dict[str, str],
+        output_dir: Path,
+        model_id: str,
+    ) -> ResearchResult:
+        """Run one query, streaming the report line-by-line to stdout."""
+        result = self._pipeline.run(
+            query=query,
+            session_context=session_ctx,
+            output_dir=output_dir,
+            stream_callback=self._display_stream,
+            model_id=model_id,
+        )
+        self._flush_line_buffer()
+        self._display_separator()
+        return result
 
     def _get_query(self) -> str | None:
         try:

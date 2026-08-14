@@ -1,0 +1,200 @@
+# Domain Entities — Deep Research Agent
+
+## Sources
+Derived from: application-design/component-methods.md + functional-design-plan answers (Q1–Q17)
+
+---
+
+## Entity Map
+
+```
+Session
+  +-- session_id: str (UUID4)
+  +-- start_time: datetime
+  +-- end_time: datetime | None
+  +-- queries: list[QueryRecord]
+
+QueryRecord
+  +-- query_id: str (UUID4)
+  +-- query_text: str
+  +-- submitted_at: datetime
+
+SessionContext (dict[str, str])
+  Keys: "session_id", "query_id"
+
+SystemPromptContext
+  +-- date: str (YYYY-MM-DD)
+  +-- session_id: str
+  +-- query_id: str
+
+AgentResponse
+  +-- response_text: str
+  +-- sources: list[Source]
+  +-- token_usage: TokenUsage
+  +-- tool_calls: list[ToolCallRecord]
+  +-- is_complete: bool          [True = full response; False = stream interrupted]
+
+ResearchResult
+  +-- query: str
+  +-- response_text: str
+  +-- output_path: Path
+  +-- sources: list[Source]
+  +-- token_usage: TokenUsage
+  +-- duration_seconds: float
+  +-- session_id: str
+  +-- query_id: str
+  +-- is_complete: bool
+
+Source
+  +-- url: str
+  +-- title: str
+  +-- description: str | None
+
+OutputMetadata
+  +-- query: str
+  +-- model_id: str
+  +-- session_id: str
+  +-- query_id: str
+  +-- generated_at: datetime
+  +-- source_count: int
+
+TokenUsage
+  +-- input_tokens: int
+  +-- output_tokens: int
+  +-- total_tokens: int
+
+ToolCallRecord
+  +-- tool_name: str
+  +-- input_summary: str
+  +-- success: bool
+  +-- latency_ms: int
+
+ToolParameters                   [Q16: CLI-configurable defaults]
+  +-- max_search_results: int    (default: 10)
+  +-- max_crawl_depth: int       (default: 2)
+
+SearchInput
+  +-- query: str
+  +-- max_results: int
+
+SearchItem
+  +-- url: str
+  +-- title: str
+  +-- snippet: str
+  +-- score: float
+
+SearchResult
+  +-- results: list[SearchItem]
+
+ExtractInput
+  +-- urls: list[str]
+
+ExtractionItem
+  +-- url: str
+  +-- content: str
+  +-- metadata: dict[str, str]
+
+ExtractResult
+  +-- extractions: list[ExtractionItem]   [partial — failed URLs omitted]
+
+CrawlInput
+  +-- url: str
+  +-- max_depth: int
+
+CrawledPage
+  +-- url: str
+  +-- content: str
+  +-- depth: int
+
+CrawlResult
+  +-- pages: list[CrawledPage]
+```
+
+---
+
+## Entity Relationships
+
+```
+Session 1 --< QueryRecord         (one session has many query records)
+QueryRecord >-- SessionContext    (flattened to dict for agent/log use)
+ResearchPipeline uses:
+  AgentResponse --> ResearchResult (pipeline constructs result from response)
+  ResearchResult --> OutputMetadata (pipeline extracts metadata fields)
+ResearchAgent produces AgentResponse
+  AgentResponse.sources extracted from tool call results (SearchResult, ExtractResult)
+OutputManager consumes:
+  response_text, sources, metadata, output_dir
+  Produces: Path (written Markdown file)
+```
+
+---
+
+## Entity Lifecycle Notes
+
+### AgentResponse.is_complete
+- `True` in all normal cases (Strands agent completes its response)
+- `False` only when Bedrock stream is interrupted mid-response AND partial tokens were buffered [Q13]
+- When `False`: `sources=[]`, `token_usage=TokenUsage(0,0,0)`, `tool_calls=[]`
+- `response_text` will contain the partial text plus the `[INCOMPLETE]` marker
+
+### ToolParameters
+- Instantiated from parsed CLI args in `__main__.py`
+- Passed to `TavilySearchTool` and `TavilyCrawlTool` constructors as instance defaults
+- Stored on tool instances; used when constructing `SearchInput` and `CrawlInput` during Strands tool dispatch
+
+### Source Extraction
+- `AgentResponse.sources` is populated by `ResearchAgent.stream()` from the Strands event stream
+- Sources are derived from URLs in `SearchResult.results` and `ExtractResult.extractions` encountered during tool calls
+- A URL seen in a `SearchItem` (with title) maps directly to a `Source`
+- Crawled pages are not included as `Source` entries (they feed the agent's knowledge, not the citation list)
+
+### OutputMetadata Fields
+- `model_id` is the Bedrock model ID string (e.g., `us.anthropic.claude-3-7-sonnet-20250219-v1:0`)
+- `generated_at` is UTC timestamp at the moment `OutputManager.write()` is called
+- `source_count` reflects `len(sources)` — may be 0 if stream was interrupted [Q13]
+
+---
+
+## Markdown Output Document Structure (Q9=C)
+
+The Markdown file produced by `OutputManager._format_markdown()` follows this template:
+
+```markdown
+# Research: {query_title}
+
+---
+
+## Metadata
+
+| Field         | Value                          |
+|---------------|--------------------------------|
+| Query         | {query}                        |
+| Model         | {model_id}                     |
+| Generated     | {generated_at ISO 8601}        |
+| Session ID    | {session_id}                   |
+| Query ID      | {query_id}                     |
+| Input Tokens  | {input_tokens}                 |
+| Output Tokens | {output_tokens}                |
+| Total Tokens  | {total_tokens}                 |
+| Sources Found | {source_count}                 |
+
+---
+
+{response_text}
+
+---
+
+## Sources
+
+1. [{title}]({url})
+   {description if present}
+
+2. ...
+
+---
+*Generated by Deep Research Agent*
+```
+
+**Incomplete response variant** — when `is_complete=False`, the response_text already
+contains the `[INCOMPLETE — stream interrupted]` marker appended by `_invoke_agent`.
+No additional structural changes to the file template are needed.
